@@ -396,7 +396,7 @@ def generate_with_groq(user_input, patient_data, latest_question):
     print("Groq messages:", messages_for_NER)
 
     try:
-        client = Groq(api_key=Groq_api_key)
+        client = Groq(api_key=settings.GROQ_API_KEY)
         ner_response = client.chat.completions.create(
             model="meta-llama/llama-4-maverick-17b-128e-instruct",
             messages=messages_for_NER,
@@ -455,8 +455,6 @@ def get_chat_history(request):
         data = json.loads(request.body.decode('utf-8'))
         user_id = data.get('user_id', None)
         chats = Chatbot.objects.all().order_by('-id')
-        # chats = Chatbot.objects.filter(use).order_by('-id')
-        
 
         for chat in chats:
             patient_data = PatientData.objects.filter(chatbot_obj=chat).first()
@@ -475,39 +473,25 @@ def get_chat_history(request):
 
             chat_history['timestamp'] = timestamp.strftime('%Y-%m-%d %H:%M:%S')
             chat_history['messageCount'] = chat.question_answers.count()
-            # chat_history['patientName'] = chat.chat_user
-            # chat_history['title'] = chat.title if chat.title else "No Title"
             chat_history['session'] = chat.session
-            # chat_history['chat_input'] = chat.chat_input if chat.chat_input else "No Input"
-            # chat_history['answer'] = chat.answer if chat.answer else "No Answer"
-            # chat_history['recommendation'] = chat.recommendation if chat.recommendation else "No Recommendation"
-            # chat_history['chat_user'] = chat.chat_user
             if patient_data:
                 chat_history['age'] = patient_data.age
                 chat_history['gender'] = patient_data.sex
-                # chat_history['condition'] = patient_data.overview_list[0].value if patient_data.overview_list else None
-
-            # chat_history['session'] = chat.session
-            # chat_history['title'] = getattr(chat, 'title', None)
-            # chat_history['age'] = chat.patient_data_obj
-            # chat_history['recommendation'] = getattr(chat, 'recommendation', None)
             chat_history['chatbot_id'] = chat.id  
             chat_history_list.append(chat_history)      
-            # question_answers = chat.question_answers.all().values('question', 'answer')
-            # chat_list.append({
-            #     'id': chat.id,
-            #     'session': chat.session,
-            #     'title': getattr(chat, 'title', None),
-            #     'recommendation': getattr(chat, 'recommendation', None),
-            #     'question_answer_list': list(question_answers),
-            #     'patient_data_obj': getattr(chat, 'patient_data_obj', {}),
-            #     'final_recommendations_list': getattr(chat, 'final_recommendations_list', [])
-            # })
-        # return JsonResponse(chat_history_list, status=200)
         print(chat_history_list)
     except Exception as e:
         traceback.print_exc(file=sys.stdout)
     return HttpResponse(json.dumps(chat_history_list), content_type='application/json')        
+
+@csrf_exempt
+def delete_chat_history(request):
+    try:
+        chat_id = json.loads(request.body.decode('utf-8')).get('chat_id')
+        Chatbot.objects.filter(id=chat_id).delete()
+    except Exception as e:
+        traceback.print_exc(file=sys.stdout)
+    return HttpResponse(json.dumps({}), content_type='application/json')        
 
 @csrf_exempt
 def get_chat_details(request):
@@ -563,6 +547,7 @@ def get_chat_details(request):
     except Exception as e:
         traceback.print_exc()
     return HttpResponse(json.dumps(chatbot_obj), content_type='application/json')  
+
 def update_treatment_recommendations(treatment_list, chatbot_obj):
     """Update patient_data with extracted treatment recommendations"""
     # Create normalized mapping dictionary
@@ -594,7 +579,6 @@ def update_treatment_recommendations(treatment_list, chatbot_obj):
         else:
             print(f"No match for {entry['name']} (normalized: {entry_key})")
 
-
 @csrf_exempt
 def process_inference(input_chatbot_obj):
     '''Process inference for the chatbot object
@@ -619,7 +603,7 @@ def process_inference(input_chatbot_obj):
             {"role": "user", "content": prompt}
         ]
         print("message summary:",messages_for_summary)
-        client = Groq(api_key=Groq_api_key)
+        client = Groq(api_key=settings.GROQ_API_KEY)
         response_for_summary = client.chat.completions.create(
             model="meta-llama/llama-4-maverick-17b-128e-instruct",
             messages=messages_for_summary,
@@ -672,11 +656,11 @@ def process_inference(input_chatbot_obj):
                         }
                     }
                 },
-                "required": ["treatment_recommendations_list"]
+                "required" : ["treatment_recommendations_list"]
             }
         }
 
-        client = Groq(api_key=Groq_api_key)
+        client = Groq(api_key=settings.GROQ_API_KEY)
         ner_response1 = client.chat.completions.create(
             model="meta-llama/llama-4-maverick-17b-128e-instruct",
             messages=messages_for_NER1,
