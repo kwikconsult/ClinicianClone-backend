@@ -41,7 +41,7 @@ class Chatbot(models.Model):
     session = models.CharField(max_length=255, unique=True)
     # chat_user = models.ForeignKey('ChatUser', on_delete=models.CASCADE)
     chat_user = models.TextField(max_length=256, blank=True, null=True)
-
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
     title = models.CharField(max_length=512, blank=True, null=True)
     chat_input = models.TextField(blank=True, null=True)
     answer = models.TextField(blank=True, null=True)

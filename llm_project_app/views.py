@@ -19,19 +19,22 @@ from llm_project_app.models import *
 from datetime import datetime
 from django.conf import settings
 
-def all_entities_found(entity_list):
-    return all(entity.get('entity_found', False) for entity in entity_list)
 @csrf_exempt
 def triage(request):
+    '''This function handles the triage process for the chatbot. It receives a JSON object from the request body, processes the chat input,and generates a response using the Groq API.
+    It updates the chatbot object with the generated answer, patient data, and question-answer pairs.
+    It also checks if all entities are found and runs inference if necessary.Finally, it saves the chatbot object and its related data to the database.
+    Input:Request
+    Output:JsonResponse having the chatbot object
+    '''
     chatbot_obj = json.loads(request.body.decode('utf-8'))
     print("Received chatbot_obj:", chatbot_obj)
     chat_input = chatbot_obj.get('chat_input', '').strip().lower()
-    print("Chat input:", chat_input)
     first_question = chatbot_obj['first_question']
     Session = chatbot_obj['session']
     try: 
+        # Initialize patient_data_obj and question_answer_list and set session if first question
         patient_data_obj = chatbot_obj.get('patient_data_obj', {})
-        print(patient_data_obj)
         question_answer_list = chatbot_obj.get('question_answer_list', [])
         if first_question:
             new_session_id =  get_random_string(32)
@@ -44,11 +47,12 @@ def triage(request):
                 last_question = question_answer_list[-2].get('answer', '')
             else:
                 last_question = ''
+        # Generate response using Groq API
         groq_answer = generate_with_groq(
         chat_input,
         patient_data_obj,
-        last_question
-        )
+        last_question)
+        #update chatbot_obj with the generated answer and patient data
         chatbot_obj['answer'] = groq_answer
         chatbot_obj['patient_data_obj'] = patient_data_obj
         print("Patient Data Object:", patient_data_obj)
@@ -60,20 +64,15 @@ def triage(request):
             all(entity.get('entity_found', False) for entity in overview_list)
             and 
              all(entity.get('entity_found', False) for entity in exam_labs_list)
-            # all_entities_found(exam_labs_list)
         )
-        # Age = chatbot_obj['patient_data_obj']['age'] 
-        # Sex = chatbot_obj['patient_data_obj']['sex']
         if all_found:
             print("All entities found - running inference")
             chatbot_obj = process_inference(chatbot_obj)
             print("Run Inference output:", chatbot_obj)
             Sum  = summarize(question_answer_list)
-            # title = f"{Age} {Sex} with {Sum}"
             title = f"{Sum}"
             print('title', title)
             chatbot_obj['title'] = title
-        # else:
 
         chatbotObj = Chatbot.objects.filter(session=chatbot_obj['Session'], chat_user=chatbot_obj["user_id"]).first()
         if chatbotObj:
@@ -82,8 +81,8 @@ def triage(request):
         if "recommendation" not in chatbot_obj:
             chatbot_obj["recommendation"] = ""
 
+        #Update the chatbot object with the session, user_id, title, answer, and recommendation and saving the chatbot object to the database
         chatbotObj = Chatbot(session=chatbot_obj['Session'], chat_user=chatbot_obj["user_id"], title=chatbot_obj["title"], answer=chatbot_obj["answer"], recommendation=chatbot_obj["recommendation"])
-        # chatbotObj.first_question = chatbot_obj['first_question']
         chatbotObj.save()
         question_answer_list = chatbot_obj["question_answer_list"]
         for question_answer in question_answer_list:
@@ -105,7 +104,7 @@ def triage(request):
         overview_list = patient_data_obj.get('overview_list', [])
         exam_labs_list = patient_data_obj.get('exam_labs_list', [])
         treatment_recommendations_list = patient_data_obj.get('treatment_recommendations_list', [])
-
+        # Create NamedEntity objects for each entry in the lists
         for entry in overview_list:
             NamedEntity.objects.create(
                 name=entry.get('name'),
@@ -140,155 +139,106 @@ def triage(request):
         traceback.print_exc()
     return HttpResponse(json.dumps(chatbot_obj), content_type='application/json')
 
-@csrf_exempt
-def triage_phone(request):
-    chatbot_obj = json.loads(request.body.decode('utf-8'))
-    print("Received chatbot_obj:", chatbot_obj)
-    chat_input = chatbot_obj.get('chat_input', '').strip().lower()
-    print("Chat input:", chat_input)
-    first_question = chatbot_obj['first_question']
-    Session = chatbot_obj['session']
-    try: 
-        patient_data_obj = chatbot_obj.get('patient_data_obj', {})
-        print(patient_data_obj)
-        question_answer_list = chatbot_obj.get('question_answer_list', [])
-        if first_question:
-            new_session_id =  get_random_string(32)
-            chatbot_obj['Session'] = new_session_id
-        if first_question:
-            last_question = ''
-            chatbot_obj['first_question'] = False
-        else:
-            if len(question_answer_list) >= 2:
-                last_question = question_answer_list[-2].get('answer', '')
-            else:
-                last_question = ''
-
-        print("Patient Data Object:", patient_data_obj)
-
-        # Get the lists (default to empty list if not present)
-        overview_list = patient_data_obj.get('overview_list', [])
-        exam_labs_list = patient_data_obj.get('exam_labs_list', [])
-        all_found = (
-            all(entity.get('entity_found', False) for entity in overview_list)
-            and 
-             all(entity.get('entity_found', False) for entity in exam_labs_list)
-            # all_entities_found(exam_labs_list)
-        )
-        # Age = chatbot_obj['patient_data_obj']['age'] 
-        # Sex = chatbot_obj['patient_data_obj']['sex']
-        if all_found:
-            print("All entities found - running inference")
-            # chatbot_obj = process_inference(chatbot_obj)
-            print("Run Inference output:", chatbot_obj)
-            Sum  = summarize(question_answer_list)
-            # title = f"{Age} {Sex} with {Sum}"
-            title = f"{Sum}"
-            print('title', title)
-            chatbot_obj['title'] = title
-        # else:
-
-        chatbotObj = Chatbot.objects.filter(session=chatbot_obj['Session'], chat_user=chatbot_obj["user_id"]).first()
-        if chatbotObj:
-             chatbotObj.delete()
-
-        if "recommendation" not in chatbot_obj:
-            chatbot_obj["recommendation"] = ""
-
-        chatbotObj = Chatbot(session=chatbot_obj['Session'], chat_user=chatbot_obj["user_id"], title=chatbot_obj["title"], answer=chatbot_obj["answer"], recommendation=chatbot_obj["recommendation"])
-        # chatbotObj.first_question = chatbot_obj['first_question']
-        chatbotObj.save()
-        question_answer_list = chatbot_obj["question_answer_list"]
-        for question_answer in question_answer_list:
-            QuestionAnswer.objects.create(
-                question=question_answer['question'],
-                answer=question_answer['answer'],
-                questionTimestamp = datetime.now(),
-                answerTimestamp = datetime.now(),
-                chatbot_obj=chatbotObj
-            )
-        patient_data, created = PatientData.objects.update_or_create(
-            chatbot_obj=chatbotObj,
-            defaults={
-            'age': patient_data_obj.get('age'),
-            'sex': patient_data_obj.get('sex')
-            }
-        )
-
-        overview_list = patient_data_obj.get('overview_list', [])
-        exam_labs_list = patient_data_obj.get('exam_labs_list', [])
-        treatment_recommendations_list = patient_data_obj.get('treatment_recommendations_list', [])
-
-        for entry in overview_list:
-            NamedEntity.objects.create(
-                name=entry.get('name'),
-                value=entry.get('value'),
-                entity_found=entry.get('entity_found', False),
-                outside_range=entry.get('outside_range', False),
-                named_entity_type='overview',
-                patient_data=patient_data
-            )
-
-        for entry in exam_labs_list:
-            NamedEntity.objects.create(
-                name=entry.get('name'),
-                value=entry.get('value'),
-                entity_found=entry.get('entity_found', False),
-                outside_range=entry.get('outside_range', False),
-                named_entity_type='exam_lab',
-                patient_data=patient_data
-            )
-
-        for entry in treatment_recommendations_list:
-            NamedEntity.objects.create(
-                name=entry.get('name'),
-                value=entry.get('value'),
-                entity_found=entry.get('entity_found', False),
-                outside_range=entry.get('outside_range', False),
-                named_entity_type='treatment_recommendation',
-                patient_data=patient_data
-            )
-
-    except Exception as e:
-        traceback.print_exc()
-    return HttpResponse(json.dumps(chatbot_obj), content_type='application/json')
-def summarize(history):
-    try:
-        # Create a string of Q&A
-        qa_text = "\n".join([f"Q: {item['question']}\nA: {item['answer']}" for item in history])
-        
-        # Create the messages list PROPERLY
-        messages = [
-            {
-                "role": "system", 
-                "content": "Summarize this doctor-to-doctor conversation into one unique line with timestamp coming afterwards so that every conversation can be identified"
-                # "if the recommendation is for ICU -  maybe mark it an emergency case (Emergency case of GI Bleed of Age Gender <date time>. Example:Emergency case of 68 yr old female with GI bleed with melena <date time>)  "
+def generate_with_groq(user_input, patient_data, latest_question):
+    '''
+    This function generates a response using the Groq API.
+    Input: user_input, patient_data, latest_question
+    Output: Groq API response
+    '''
+    response_format = {
+        "type": "json_object",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "entities": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "value": {"type": "string"},
+                            "entity_found": {"type": "boolean"}
+                        },
+                        "required": ["name", "value", "entity_found"]
+                    }
+                }
             },
-            {
-                "role": "user", 
-                "content": f"Summarize the following conversation into a title of maximum 7 words, no extra words just title: {qa_text}"
-            }
-        ]
+            "required": ["entities"]
+        }
+    }
 
+    messages_for_NER = [
+        {
+            "role": "system",
+            "content": "You are a physician and you are talking with a doctor who is treating patient, Hence question should be 'has the patient' instead of 'do you have'. In the conversation, acknowledge when information is being provided to you, and if possible comment on the condition of the patient from the information you have received so far."
+            "Extract the terms only if they are mentioned in the user input. You are assigned to extract the medical terms and their values mentioned by the user. Return JSON matching the schema.For each entity, return an object with 'name', 'value' (boolean string), and 'entity_found' (boolean). "
+        "Example: 'entities': [[{'name': 'Hematochezia', 'value': 'true', 'entity_found': true}, ...]"
+        "Please ensure that you pass the enities in the standardized format. Example: International Normalized Ratio (INR) should be passed as INR, not International Normalized Ratio. "
+        "Age, Sex, Hematochezia,Hematemesis,Melena,Duration,Syncope,Hx of GIB,Unstable CAD,COPD,CRF,Risk for stress ulcer,Cirrhosis,ASA/NSAID,PPI, SBP,DBP,HR,Orthostasis,NG lavage,Rectal,HCT,,HCT Drop,PLT,CR,BUN,INR"
+        "Hematochezia and Hemetesis have three values - 'none','small','copious', Melena have three values - 'Brown', 'Dark', 'Pitch black'"
+        "for other entities, if it is yes then it have to be present and if it is no, then absent"
+        },
+        {
+            "role": "assistant",
+            "content": latest_question
+        },
+        {"role": "user", "content": user_input}
+    ]
+
+    try:
         client = Groq(api_key=settings.GROQ_API_KEY)
-        summary_response = client.chat.completions.create(
+        ner_response = client.chat.completions.create(
             model="meta-llama/llama-4-maverick-17b-128e-instruct",
-            messages=messages, 
+            messages=messages_for_NER,
             temperature=0,
+            response_format=response_format
         )
         
+        content = ner_response.choices[0].message.content or "{}"
+        result = json.loads(content)
+        entities = result.get("entities", [])
+        
+        # Extract and update patient_data with the extracted entities
+        extract_and_update_entities(entities, patient_data)
+
+        # Generate follow-up question
+        # Check for missing entities and updating the follow-up context so that the LLM knows what to ask
+        missing = [
+            item.get('name')
+            for section in patient_data.values()
+            if isinstance(section, list)
+            for item in section
+            if isinstance(item, dict) and not item.get('entity_found', False)
+        ] + [
+            key
+            for key in ('age', 'sex')
+            if not patient_data.get(key)
+        ]
+        follow_up_context = f" Missing data: {', '.join(missing)}. Ask one question about missing data. As this is late emergency night call, Be as natural as possible and direct questions and DO NOT ask about Source, Resuscitation, Emergent Endoscopy, ICU. Ask about multiple entities at once. example: what is his blood work"
+        print("follow up", follow_up_context)
+        messages_for_QG = [
+            {"role": "system", "content": f"You are a medical assistant. {follow_up_context}"},
+            {"role": "user", "content": user_input}
+        ]
+        
+        qg_response = client.chat.completions.create(
+            model="meta-llama/llama-4-maverick-17b-128e-instruct",
+            messages=messages_for_QG,
+            temperature=0.3,
+            max_tokens=64
+        )
+        print("QG Response:", qg_response.choices[0].message.content)
+        return qg_response.choices[0].message.content
         
     except Exception as e:
         traceback.print_exc()
-    return summary_response.choices[0].message.content
-def all_entities_found(patient_data):
-    overview_all_found = all(item['entity_found'] for item in patient_data['overview_list'])
-    exam_labs_all_found = all(item['entity_found'] for item in patient_data['exam_labs_list'])
-    return overview_all_found and exam_labs_all_found
+        return "An error occurred while processing your request."
     
 def extract_and_update_entities(entities, patient_data):
     """
     Update patient_data_obj with extracted entities
+    Input: Entities list from NER
+    Output: None
     """
     entity_map = {}
     for item in entities:
@@ -328,126 +278,46 @@ def extract_and_update_entities(entities, patient_data):
                 except (ValueError, TypeError):
                     # Handle non-numeric values gracefully
                     entry['outside_range'] = False
-
-def generate_with_groq(user_input, patient_data, latest_question):
+                    
+def summarize(history):
+    '''Summarize the chat history into a concise title to identify the conversation.
+    Input: Chat history list
+    Output: Summary string
     '''
-    This function generates a response using the Groq API.
-    Input: user_input, patient_data, latest_question
-    Output: Groq API response
-    '''
-    response_format = {
-        "type": "json_object",
-        "schema": {
-            "type": "object",
-            "properties": {
-                "entities": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type": "string"},
-                            "value": {"type": "string"},
-                            "entity_found": {"type": "boolean"}
-                        },
-                        "required": ["name", "value", "entity_found"]
-                    }
-                }
-            },
-            "required": ["entities"]
-        }
-    }
-    
-    # messages_for_NER = [
-    #     {
-    #         "role": "system",
-    #         "content": "You are a medical assistant and you are talking with a doctor who is treating patient, Hence question should be 'has the patient' instead of 'do you have'"
-    #         "Extract the terms only if they are mentioned in the user input. You are assigned to extract the medical terms and their values mentioned by the user. Return JSON matching the schema.For each entity, return an object with 'name', 'value' (boolean string), and 'entity_found' (boolean). "
-    #     "Example: 'entities': [[{'name': 'Hematochezia', 'value': 'true', 'entity_found': true}, ...]"
-    #     "Please ensure that you pass the enities in the standardized format. Example: International Normalized Ratio (INR) should be passed as INR, not International Normalized Ratio. "
-    #     "Age, Sex, Hematochezia,Hematemesis,Melena,Duration,Syncope,Hx of GIB,Unstable CAD,COPD,CRF,Risk for stress ulcer,Cirrhosis,ASA/NSAID,PPI, SBP,DBP,HR,Orthostasis,NG lavage,Rectal,HCT,,HCT Drop,PLT,CR,BUN,INR"
-    #     "Hematochezia and Hemetesis have three values - 'none','small','copious', Melena have three values - 'Brown', 'Dark', 'Pitch black'"
-    #     "for other entities, if it is yes then it have to be present and if it is no, then absent"
-    #     },
-    #     {
-    #         "role": "assistant",
-    #         "content": latest_question
-    #     },
-    #     {"role": "user", "content": user_input}
-    # ]
-
-    messages_for_NER = [
-        {
-            "role": "system",
-            "content": "You are a physician and you are talking with a doctor who is treating patient, Hence question should be 'has the patient' instead of 'do you have'. In the conversation, acknowledge when information is being provided to you, and if possible comment on the condition of the patient from the information you have received so far."
-            "Extract the terms only if they are mentioned in the user input. You are assigned to extract the medical terms and their values mentioned by the user. Return JSON matching the schema.For each entity, return an object with 'name', 'value' (boolean string), and 'entity_found' (boolean). "
-        "Example: 'entities': [[{'name': 'Hematochezia', 'value': 'true', 'entity_found': true}, ...]"
-        "Please ensure that you pass the enities in the standardized format. Example: International Normalized Ratio (INR) should be passed as INR, not International Normalized Ratio. "
-        "Age, Sex, Hematochezia,Hematemesis,Melena,Duration,Syncope,Hx of GIB,Unstable CAD,COPD,CRF,Risk for stress ulcer,Cirrhosis,ASA/NSAID,PPI, SBP,DBP,HR,Orthostasis,NG lavage,Rectal,HCT,,HCT Drop,PLT,CR,BUN,INR"
-        "Hematochezia and Hemetesis have three values - 'none','small','copious', Melena have three values - 'Brown', 'Dark', 'Pitch black'"
-        "for other entities, if it is yes then it have to be present and if it is no, then absent"
-        },
-        {
-            "role": "assistant",
-            "content": latest_question
-        },
-        {"role": "user", "content": user_input}
-    ]
-    
-    print("Groq messages:", messages_for_NER)
-
     try:
+        # Create a string of Q&A
+        qa_text = "\n".join([f"Q: {item['question']}\nA: {item['answer']}" for item in history])
+        
+        # Create the messages list PROPERLY
+        messages = [
+            {
+                "role": "system", 
+                "content": "Summarize this doctor-to-doctor conversation into one unique line with timestamp coming afterwards so that every conversation can be identified"
+            },
+            {
+                "role": "user", 
+                "content": f"Summarize the following conversation into a title of maximum 7 words, no extra words just title: {qa_text}"
+            }
+        ]
+
         client = Groq(api_key=settings.GROQ_API_KEY)
-        ner_response = client.chat.completions.create(
+        summary_response = client.chat.completions.create(
             model="meta-llama/llama-4-maverick-17b-128e-instruct",
-            messages=messages_for_NER,
+            messages=messages, 
             temperature=0,
-            response_format=response_format
         )
         
-        content = ner_response.choices[0].message.content or "{}"
-        result = json.loads(content)
-        print("Content:", content)
-        print("ner_response:", ner_response.choices[0].message)
-        print("NER Result:", result)
-        entities = result.get("entities", [])
-        extract_and_update_entities(entities, patient_data)
-
-        # Generate follow-up question
-        missing = [
-            item.get('name')
-            for section in patient_data.values()
-            if isinstance(section, list)
-            for item in section
-            if isinstance(item, dict) and not item.get('entity_found', False)
-        ] + [
-            key
-            for key in ('age', 'sex')
-            if not patient_data.get(key)
-        ]
-
-        follow_up_context = f" Missing data: {', '.join(missing)}. Ask one question about missing data. As this is late emergency night call, Be as natural as possible and direct questions and DO NOT ask about Source, Resuscitation, Emergent Endoscopy, ICU. Ask about multiple entities at once. example: what is his blood work"
-        print("follow up", follow_up_context)
-        messages_for_QG = [
-            {"role": "system", "content": f"You are a medical assistant. {follow_up_context}"},
-            {"role": "user", "content": user_input}
-        ]
-        
-        qg_response = client.chat.completions.create(
-            model="meta-llama/llama-4-maverick-17b-128e-instruct",
-            messages=messages_for_QG,
-            temperature=0.3,
-            max_tokens=64
-        )
-        print("QG Response:", qg_response.choices[0].message.content)
-        return qg_response.choices[0].message.content
         
     except Exception as e:
         traceback.print_exc()
-        return "An error occurred while processing your request."
-    
+    return summary_response.choices[0].message.content
+
 @csrf_exempt
 def get_chat_history(request):
-    
+    '''This function retrieves the chat history for a user.
+    Input: User ID
+    Output: List of chat history objects
+    '''
     chat_history_list = []
 
     try:
@@ -486,6 +356,10 @@ def get_chat_history(request):
 
 @csrf_exempt
 def delete_chat_history(request):
+    '''This function deletes the chat history for a user.
+    Input: Chat ID
+    Output: None
+    '''
     try:
         chat_id = json.loads(request.body.decode('utf-8')).get('chat_id')
         Chatbot.objects.filter(id=chat_id).delete()
@@ -495,9 +369,12 @@ def delete_chat_history(request):
 
 @csrf_exempt
 def get_chat_details(request):
+    '''This function retrieves the details of a specific chat.
+    Input: Chat ID
+    Output: Chat details object
+    '''
     try:
         chat_id = json.loads(request.body.decode('utf-8')).get('chat_id')
-        # chat_id = json.loads(request.body.decode('utf-8'))
 
         chatbot_obj = Chatbot.objects.get(id=chat_id)
         question_answers = chatbot_obj.question_answers.all().order_by('id')
@@ -516,9 +393,7 @@ def get_chat_details(request):
             patient_data = {
                 'age': patient_data_obj.age,
                 'sex': patient_data_obj.sex,
-                # 'overview_list': patient_data_obj.overview_list,
-                # 'exam_labs_list': patient_data_obj.exam_labs_list,
-                # 'treatment_recommendations_list': patient_data_obj.treatment_recommendations_list
+                
             }
             overview_list = patient_data_obj.entities.filter(named_entity_type='overview').values('name', 'value', 'entity_found', 'outside_range')
             exam_labs_list = patient_data_obj.entities.filter(named_entity_type='exam_lab').values('name', 'value', 'entity_found', 'outside_range')
@@ -537,19 +412,18 @@ def get_chat_details(request):
             'patient_data_obj': patient_data,
             'answer': chatbot_obj.answer,
             'recommendation': chatbot_obj.recommendation,
-            # 'created_at': chatbot_obj.created_at.isoformat() if chatbot_obj.created_at else None,
-            # 'updated_at': chatbot_obj.updated_at.isoformat() if chatbot_obj.updated_at else None
+
         }
-        print( " IIII ", response_data)
         return JsonResponse(response_data, status=200)
-        
-        
     except Exception as e:
         traceback.print_exc()
     return HttpResponse(json.dumps(chatbot_obj), content_type='application/json')  
 
 def update_treatment_recommendations(treatment_list, chatbot_obj):
-    """Update patient_data with extracted treatment recommendations"""
+    """Update patient_data with extracted treatment recommendations.
+    Input: Treatment list from NER
+    Output: None
+    """
     # Create normalized mapping dictionary
     treatment_map = {}
     for item in treatment_list:
@@ -602,7 +476,7 @@ def process_inference(input_chatbot_obj):
                 f"This is the example for expected output: {example_output}"},
             {"role": "user", "content": prompt}
         ]
-        print("message summary:",messages_for_summary)
+        
         client = Groq(api_key=settings.GROQ_API_KEY)
         response_for_summary = client.chat.completions.create(
             model="meta-llama/llama-4-maverick-17b-128e-instruct",
@@ -612,17 +486,16 @@ def process_inference(input_chatbot_obj):
         summary = response_for_summary.choices[0].message.content or "{}"
               
         
-        message_for_prediction = f" You have to triage the source, resuscitation, if urgent endoscopy required, if ICU is needed or Monitor or Regular room. you have to give the response in short form: Source:'',Resuscitation:'',Emergent Endoscopy:'',  if ICU is required:''. This is the information given by the patient: {summary}"
-        print("prediction message:", message_for_prediction)
+        message_for_prediction = f" You have to triage the source, resuscitation, if urgent endoscopy required, if ICU is needed or Monitor or Regular room. you have to give the response in short form: Source:'',Resuscitation:'',Emergent Endoscopy:'',  if ICU is required:''. Also provide thought process behind the decision under 'chain_of_thought'. This is the information given by the patient: {summary}"
+       
         payload = {
             "prompt": message_for_prediction,
             "max_tokens": 1024,
             "temperature": 0.7,
             "top_p": 0.9,
         }
-        print("Final message:",message_for_prediction)
+        
         resp = requests.post("https://clinicianclone.com/infer_test/", json=payload, timeout=25)
-        # resp = requests.post("http://198.145.127.41:8003/generate/", json=payload, timeout=25)
 
         
         resp.raise_for_status()
@@ -631,7 +504,7 @@ def process_inference(input_chatbot_obj):
         messages_for_NER1 = [
         {
             "role": "system",
-            "content": "You are a medical assistant. Extract ONLY the following treatment-related parameters EXPLICITLY MENTIONED in the clinical discussion: Source (Allowed values: 'Upper','Mid','Lower'), Resuscitation (Y/N), Emergent Endoscopy (Y/N), ICU (Y/N). Return JSON with 'treatment_recommendations_list' containing these 4 parameters in EXACT order. For each: 'name' , 'value' (extracted value (Should be exactly as Allowed Values) OR ''), 'entity_found' (true ONLY if explicitly mentioned), 'outside_range' (true ONLY if value invalid). if it is ICU then pass value as Y or for everything else it should be N"
+            "content": "You are a medical assistant. Extract ONLY the following treatment-related parameters EXPLICITLY MENTIONED in the clinical discussion: Source (Allowed values: 'Upper','Mid','Lower'), Resuscitation (Y/N), Emergent Endoscopy (Y/N), ICU (Y/N). Return JSON with 'treatment_recommendations_list' containing these 4 parameters in EXACT order. also for the 'chain_of_thought' return the string of explanation given by the LLM. For each: 'name' , 'value' (extracted value (Should be exactly as Allowed Values) OR ''), 'entity_found' (true ONLY if explicitly mentioned), 'outside_range' (true ONLY if value invalid). if it is ICU then pass value as Y or for everything else it should be N. Explain your reasoning process in detail and return the thought process in the JSON as 'chain_of_thought'."
         },
         {"role": "user", "content": agent_response}
        ]
@@ -654,9 +527,12 @@ def process_inference(input_chatbot_obj):
                             },
                             "required": ["name", "value", "entity_found", "outside_range"]
                         }
+                    },
+                    "chain_of_thought": {
+                        "type": "string"
                     }
                 },
-                "required" : ["treatment_recommendations_list"]
+                "required" : ["treatment_recommendations_list", "chain_of_thought"]
             }
         }
 
@@ -670,12 +546,25 @@ def process_inference(input_chatbot_obj):
 
         content1 = ner_response1.choices[0].message.content or "{}"
         result1 = json.loads(content1)
+        print("NER Response:", result1)
         def generate_recommendation_paragraph(data):
             source_val = None
             source_found = False
             resus_val = None
             endo_val = None
             icu_val = None
+
+            # item_data_list = ['Source', 'Resuscitation', 'Emergent Endoscopy', 'ICU']
+            # item_obj_list = []
+            # for item in data['treatment_recommendations_list']:
+            #     if item['name'] in  item_data_list:
+            #         item_obj = {
+            #             "name": item['name'],
+            #             "value": item['value'],
+            #             "entity_found": item['entity_found'],
+            #             "outside_range": item['outside_range']
+            #         }
+            #         item_obj_list.append(item_obj)
 
             for item in data['treatment_recommendations_list']:
                 if item['name'] == 'Source':
@@ -725,28 +614,34 @@ def process_inference(input_chatbot_obj):
             return " ".join(sentences)
         
         treatment_list = result1.get("treatment_recommendations_list", [])
+        chain_of_thought = result1.get("chain_of_thought", "")
+
         recommendation = generate_recommendation_paragraph(result1)
-        print("recommendation", recommendation)
+        
         update_treatment_recommendations(treatment_list, input_chatbot_obj)
         updated_treatment = input_chatbot_obj['patient_data_obj']['treatment_recommendations_list']
-        print("Updated treatment_recommendations_list:", updated_treatment)
-        def all_entities_found(entity_list):
-            return all(entity.get('entity_found', False) for entity in entity_list)
+        
         overview_list = patient_data_obj.get('overview_list', [])
         exam_labs_list = patient_data_obj.get('exam_labs_list', [])
         all_found = (
-            all_entities_found(overview_list) and 
-            all_entities_found(exam_labs_list)
+            all(entity.get('entity_found', False) for entity in overview_list)
+            and
+            all(entity.get('entity_found', False) for entity in exam_labs_list)
         )
         if all_found:
             input_chatbot_obj['answer'] = "Thank you for the information, I have received all the information. You can check the side bar for final recommendations"
         input_chatbot_obj['recommendation'] = recommendation
+        input_chatbot_obj['chain_of_thought'] = chain_of_thought
     except Exception as e:
         traceback.print_exc()
     return input_chatbot_obj
 
 @csrf_exempt
 def run_inference(request):
+    '''run inference on the chatbot object
+    input: chatbot_obj
+    output : updated chatbot_obj with answer, recommendation, and title
+    This function processes the chatbot object, generates a new session ID if it's the first question,'''
     try:
         chatbot_obj = json.loads(request.body.decode('utf-8'))
 
@@ -760,11 +655,7 @@ def run_inference(request):
             last_question = ''
             chatbot_obj['first_question'] = False
             chat_input = chatbot_obj.get('chat_input', '')
-            # else:
-            #     if len(question_answer_list) >= 2:
-            #         last_question = question_answer_list[-2].get('answer', '')
-            #     else:
-            #         last_question = ''
+            
             groq_answer = generate_with_groq(
             chat_input,
             patient_data_obj,
@@ -865,5 +756,124 @@ def run_inference(request):
             content_type='application/json'
         )
 
+@csrf_exempt
+def triage_phone(request):
+    chatbot_obj = json.loads(request.body.decode('utf-8'))
+#     print
+# #     {
+# #   "callerid": "system__caller_id",
+# #   "answer": "This parameter sends the LLM response to the URL.",
+# #   "chat_input": "This contains the user message when they speak.",
+# #   "session": "system__conversation_id",
+# #   "phone_number": "+1 234 567 8901"
+# #     }
+    
+#     chat_input = chatbot_obj.get('chat_input', '').strip().lower()
+#     print("Chat input:", chat_input)
+#     first_question = chatbot_obj['first_question']
+#     Session = chatbot_obj['session']
+#     try: 
+#         patient_data_obj = chatbot_obj.get('patient_data_obj', {})
+#         print(patient_data_obj)
+#         question_answer_list = chatbot_obj.get('question_answer_list', [])
+#         if first_question:
+#             new_session_id =  get_random_string(32)
+#             chatbot_obj['Session'] = new_session_id
+#         if first_question:
+#             last_question = ''
+#             chatbot_obj['first_question'] = False
+#         else:
+#             if len(question_answer_list) >= 2:
+#                 last_question = question_answer_list[-2].get('answer', '')
+#             else:
+#                 last_question = ''
 
+#         print("Patient Data Object:", patient_data_obj)
+
+#         # Get the lists (default to empty list if not present)
+#         overview_list = patient_data_obj.get('overview_list', [])
+#         exam_labs_list = patient_data_obj.get('exam_labs_list', [])
+#         all_found = (
+#             all(entity.get('entity_found', False) for entity in overview_list)
+#             and 
+#              all(entity.get('entity_found', False) for entity in exam_labs_list)
+#             # all_entities_found(exam_labs_list)
+#         )
+#         # Age = chatbot_obj['patient_data_obj']['age'] 
+#         # Sex = chatbot_obj['patient_data_obj']['sex']
+#         if all_found:
+#             print("All entities found - running inference")
+#             # chatbot_obj = process_inference(chatbot_obj)
+#             print("Run Inference output:", chatbot_obj)
+#             Sum  = summarize(question_answer_list)
+#             # title = f"{Age} {Sex} with {Sum}"
+#             title = f"{Sum}"
+#             print('title', title)
+#             chatbot_obj['title'] = title
+#         # else:
+
+#         chatbotObj = Chatbot.objects.filter(session=chatbot_obj['Session'], chat_user=chatbot_obj["user_id"]).first()
+#         if chatbotObj:
+#              chatbotObj.delete()
+
+#         if "recommendation" not in chatbot_obj:
+#             chatbot_obj["recommendation"] = ""
+
+#         chatbotObj = Chatbot(session=chatbot_obj['Session'], chat_user=chatbot_obj["user_id"], title=chatbot_obj["title"], answer=chatbot_obj["answer"], recommendation=chatbot_obj["recommendation"])
+#         # chatbotObj.first_question = chatbot_obj['first_question']
+#         chatbotObj.save()
+#         question_answer_list = chatbot_obj["question_answer_list"]
+#         for question_answer in question_answer_list:
+#             QuestionAnswer.objects.create(
+#                 question=question_answer['question'],
+#                 answer=question_answer['answer'],
+#                 questionTimestamp = datetime.now(),
+#                 answerTimestamp = datetime.now(),
+#                 chatbot_obj=chatbotObj
+#             )
+#         patient_data, created = PatientData.objects.update_or_create(
+#             chatbot_obj=chatbotObj,
+#             defaults={
+#             'age': patient_data_obj.get('age'),
+#             'sex': patient_data_obj.get('sex')
+#             }
+#         )
+
+#         overview_list = patient_data_obj.get('overview_list', [])
+#         exam_labs_list = patient_data_obj.get('exam_labs_list', [])
+#         treatment_recommendations_list = patient_data_obj.get('treatment_recommendations_list', [])
+
+#         for entry in overview_list:
+#             NamedEntity.objects.create(
+#                 name=entry.get('name'),
+#                 value=entry.get('value'),
+#                 entity_found=entry.get('entity_found', False),
+#                 outside_range=entry.get('outside_range', False),
+#                 named_entity_type='overview',
+#                 patient_data=patient_data
+#             )
+
+#         for entry in exam_labs_list:
+#             NamedEntity.objects.create(
+#                 name=entry.get('name'),
+#                 value=entry.get('value'),
+#                 entity_found=entry.get('entity_found', False),
+#                 outside_range=entry.get('outside_range', False),
+#                 named_entity_type='exam_lab',
+#                 patient_data=patient_data
+#             )
+
+#         for entry in treatment_recommendations_list:
+#             NamedEntity.objects.create(
+#                 name=entry.get('name'),
+#                 value=entry.get('value'),
+#                 entity_found=entry.get('entity_found', False),
+#                 outside_range=entry.get('outside_range', False),
+#                 named_entity_type='treatment_recommendation',
+#                 patient_data=patient_data
+#             )
+
+    # except Exception as e:
+    #     traceback.print_exc()
+    return HttpResponse(json.dumps(chatbot_obj), content_type='application/json')
 
