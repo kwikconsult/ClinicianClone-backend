@@ -14,6 +14,7 @@ class NamedEntity(models.Model):
 class QuestionAnswer(models.Model):
     question = models.TextField()
     answer = models.TextField(blank = True, null=True)
+    chain_of_thought = models.TextField(blank=True, null=True)
     questionTimestamp = models.DateTimeField(auto_now_add=True)
     answerTimestamp = models.DateTimeField(auto_now=True)
     chatbot_obj = models.ForeignKey('Chatbot', on_delete=models.CASCADE, related_name='question_answers', blank=True, null=True)
@@ -44,6 +45,7 @@ class Chatbot(models.Model):
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     title = models.CharField(max_length=512, blank=True, null=True)
     chat_input = models.TextField(blank=True, null=True)
+    chain_of_thought = models.TextField(blank=True, null=True)
     answer = models.TextField(blank=True, null=True)
     recommendation = models.TextField(blank=True, null=True)
     def __unicode__(self):
