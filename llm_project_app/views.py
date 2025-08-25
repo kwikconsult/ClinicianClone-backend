@@ -18,6 +18,7 @@ from groq import Groq
 from llm_project_app.models import *
 from datetime import datetime
 from django.conf import settings
+import time
 
 @csrf_exempt
 def triage(request):
@@ -28,7 +29,7 @@ def triage(request):
     Output:JsonResponse having the chatbot object
     '''
     chatbot_obj = json.loads(request.body.decode('utf-8'))
-    print("Received chatbot_obj:", chatbot_obj)
+    print("Chatbot Object:", chatbot_obj)
     chat_input = chatbot_obj.get('chat_input', '').strip().lower()
     first_question = chatbot_obj['first_question']
     Session = chatbot_obj['session']
@@ -47,6 +48,7 @@ def triage(request):
                 last_question = question_answer_list[-2].get('answer', '')
             else:
                 last_question = ''
+                
         # Generate response using Groq API
         groq_answer = generate_with_groq(
         chat_input,
@@ -55,9 +57,46 @@ def triage(request):
         #update chatbot_obj with the generated answer and patient data
         chatbot_obj['answer'] = groq_answer
         chatbot_obj['patient_data_obj'] = patient_data_obj
-        print("Patient Data Object:", patient_data_obj)
+        
 
-        # Get the lists (default to empty list if not present)
+        # Record the start time
+        start_time = time.time() 
+        
+    #     summary_of_COT = [
+    #     {
+    #         "role": "system",
+    #         "content": "Please summarize the JSON file into  small text, no extra words, just the summary of the patient data object"
+    #     },
+    #     {"role": "user", "content": json.dumps(patient_data_obj)}
+    # ]
+    #     client = Groq(api_key=settings.GROQ_API_KEY)
+    #     cot_summary = client.chat.completions.create(
+    #         model="meta-llama/llama-4-maverick-17b-128e-instruct",
+    #         messages=summary_of_COT,
+    #         temperature=0
+    #     )
+    #     cot_summary = cot_summary.choices[0].message.content or "{}"
+    #     print("Chain of Thought Summary:", cot_summary)
+    #     cot_prompt = f"Please give your chain of thought process for the following patient data: {cot_summary} related to the source of bleeding, resuscitation, if urgent endoscopy required, if ICU is needed or Monitor or Regular room. You have to give the response in short form."
+    #     payload = {
+    #         "prompt": cot_summary,
+    #         "max_tokens": 1024,
+    #         "temperature": 0.7,
+    #         "top_p": 0.9,
+    #     }
+        
+    #     resp2 = requests.post("https://clinicianclone.com/infer_test/", json=payload, timeout=25)
+
+        
+    #     resp2.raise_for_status()
+    #     agent_response2 = resp2.text
+    #     chatbot_obj['chain_of_thought'] = agent_response2
+    #     print("agent response2",agent_response2)
+    #     end_time = time.time()
+
+    #     # Calculate and print the elapsed time
+    #     elapsed_time = end_time - start_time
+    #     print(f"Execution time: {elapsed_time:.4f} seconds")
         overview_list = patient_data_obj.get('overview_list', [])
         exam_labs_list = patient_data_obj.get('exam_labs_list', [])
         all_found = (
@@ -170,13 +209,15 @@ def generate_with_groq(user_input, patient_data, latest_question):
     messages_for_NER = [
         {
             "role": "system",
-            "content": "You are a physician and you are talking with a doctor who is treating patient, Hence question should be 'has the patient' instead of 'do you have'. In the conversation, acknowledge when information is being provided to you, and if possible comment on the condition of the patient from the information you have received so far."
-            "Extract the terms only if they are mentioned in the user input. You are assigned to extract the medical terms and their values mentioned by the user. Return JSON matching the schema.For each entity, return an object with 'name', 'value' (boolean string), and 'entity_found' (boolean). "
+            "content": "You are discussing a patient with a physician in a natural conversational style. Summarize the data when asked."
+            "Extract medical terms and corresponding values mentioned by the user. Return JSON matching the schema. For each entity, return an object with 'name', 'value' (boolean string), and 'entity_found' (boolean)."
         "Example: 'entities': [[{'name': 'Hematochezia', 'value': 'true', 'entity_found': true}, ...]"
-        "Please ensure that you pass the enities in the standardized format. Example: International Normalized Ratio (INR) should be passed as INR, not International Normalized Ratio. "
+        "Extract the entities only mentioned in the user input. If an entity is not mentioned, don't include it in the response."
+        "Give the response if it is yes then it have to be Yes and if it is no, then No."
+        "Pass the entities as a standardized format. Example: International Normalized Ratio (INR) should be passed as INR, not International Normalized Ratio."
         "Age, Sex, Hematochezia,Hematemesis,Melena,Duration,Syncope,Hx of GIB,Unstable CAD,COPD,CRF,Risk for stress ulcer,Cirrhosis,ASA/NSAID,PPI, SBP,DBP,HR,Orthostasis,NG lavage,Rectal,HCT,,HCT Drop,PLT,CR,BUN,INR"
         "Hematochezia and Hemetesis have three values - 'none','small','copious', Melena have three values - 'Brown', 'Dark', 'Pitch black'"
-        "for other entities, if it is yes then it have to be present and if it is no, then absent"
+        "for other entities, if it is yes then it have to be Yes and if it is no, then No. "
         },
         {
             "role": "assistant",
@@ -214,8 +255,9 @@ def generate_with_groq(user_input, patient_data, latest_question):
             for key in ('age', 'sex')
             if not patient_data.get(key)
         ]
-        follow_up_context = f" Missing data: {', '.join(missing)}. Ask one question about missing data. As this is late emergency night call, Be as natural as possible and direct questions and DO NOT ask about Source, Resuscitation, Emergent Endoscopy, ICU. Ask about multiple entities at once. example: what is his blood work"
-        print("follow up", follow_up_context)
+        follow_up_context = f" Missing data: {', '.join(missing)}. Collect data about variables: Missing Data. Keep questions short and terse, Be as natural as possible and direct questions and DO NOT ask about Source, Resuscitation, Emergent Endoscopy or ICU. Combine multiple missing entities into one question. Example: 'What is their blood work?"
+
+        
         messages_for_QG = [
             {"role": "system", "content": f"You are a medical assistant. {follow_up_context}"},
             {"role": "user", "content": user_input}
@@ -227,8 +269,10 @@ def generate_with_groq(user_input, patient_data, latest_question):
             temperature=0.3,
             max_tokens=64
         )
-        print("QG Response:", qg_response.choices[0].message.content)
+        print("Generated follow-up question:          ", qg_response.choices[0].message.content)
         return qg_response.choices[0].message.content
+        
+        
         
     except Exception as e:
         traceback.print_exc()
@@ -292,11 +336,11 @@ def summarize(history):
         messages = [
             {
                 "role": "system", 
-                "content": "Summarize this doctor-to-doctor conversation into one unique line with timestamp coming afterwards so that every conversation can be identified"
+                "content": "Summarize the conversation with timestamp"
             },
             {
                 "role": "user", 
-                "content": f"Summarize the following conversation into a title of maximum 7 words, no extra words just title: {qa_text}"
+                "content": f"Summarize conversation in under 10 words, as title: {qa_text}"
             }
         ]
 
@@ -486,7 +530,7 @@ def process_inference(input_chatbot_obj):
         summary = response_for_summary.choices[0].message.content or "{}"
               
         
-        message_for_prediction = f" You have to triage the source, resuscitation, if urgent endoscopy required, if ICU is needed or Monitor or Regular room. you have to give the response in short form: Source:'',Resuscitation:'',Emergent Endoscopy:'',  if ICU is required:''. Also provide thought process behind the decision under 'chain_of_thought'. This is the information given by the patient: {summary}"
+        message_for_prediction = f" You have to triage the source, resuscitation, if urgent endoscopy required, if ICU is needed or Monitor or Regular room. you have to give the response in short form: Source:'',Resuscitation:'',Emergent Endoscopy:'',  if ICU is required:''. Also provide the chain_of_thought behind why do you think the bleeding is from particular sourse, why do you think emergent endoscopy is required/not required, why dp you think reusitation is required/not required, why do you think ICU admission is required/not_required. under 'chain_of_thought'. This is the information given by the patient: {summary}"
        
         payload = {
             "prompt": message_for_prediction,
@@ -494,7 +538,6 @@ def process_inference(input_chatbot_obj):
             "temperature": 0.7,
             "top_p": 0.9,
         }
-        
         resp = requests.post("https://clinicianclone.com/infer_test/", json=payload, timeout=25)
 
         
@@ -504,7 +547,7 @@ def process_inference(input_chatbot_obj):
         messages_for_NER1 = [
         {
             "role": "system",
-            "content": "You are a medical assistant. Extract ONLY the following treatment-related parameters EXPLICITLY MENTIONED in the clinical discussion: Source (Allowed values: 'Upper','Mid','Lower'), Resuscitation (Y/N), Emergent Endoscopy (Y/N), ICU (Y/N). Return JSON with 'treatment_recommendations_list' containing these 4 parameters in EXACT order. also for the 'chain_of_thought' return the string of explanation given by the LLM. For each: 'name' , 'value' (extracted value (Should be exactly as Allowed Values) OR ''), 'entity_found' (true ONLY if explicitly mentioned), 'outside_range' (true ONLY if value invalid). if it is ICU then pass value as Y or for everything else it should be N. Explain your reasoning process in detail and return the thought process in the JSON as 'chain_of_thought'."
+            "content": "You are a medical assistant. Extract ONLY the following treatment-related parameters EXPLICITLY MENTIONED in the clinical discussion: Source (Allowed values: 'Upper','Mid','Lower'), Resuscitation (Y/N), Emergent Endoscopy (Y/N), ICU (Y/N). Return JSON with 'treatment_recommendations_list' containing these 4 parameters in EXACT order. also for the 'chain_of_thought' return the string of explanation given by the LLM, direct Chain of thought on getting those results, don't repeat the terms. For each: 'name' , 'value' (extracted value (Should be exactly as Allowed Values) OR ''), 'entity_found' (true ONLY if explicitly mentioned), 'outside_range' (true ONLY if value invalid). if it is ICU then pass value as Y or for everything else it should be N. Explain your reasoning process in detail and return the thought process in the JSON as 'chain_of_thought'."
         },
         {"role": "user", "content": agent_response}
        ]
@@ -637,6 +680,43 @@ def process_inference(input_chatbot_obj):
     return input_chatbot_obj
 
 @csrf_exempt
+def get_chat_settings(request):
+    '''get chat settings for the chatbot object
+    input: chatbot_obj
+    '''
+    chat_settings = {
+        "ner_llm_role": "ner_role",
+        "ner_llm_content": settings.DEFAULT_NER_CONTENT,
+        "ner_model_name": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "ner_model_temperature": 0.7,
+        "ner_model_max_tokens": 1024,
+        "follow_up_context": "Please provide more details.",
+        "follow_up_model": "model2",
+        "follow_up_model_temperature": 0.5,
+        "follow_up_max_tokens": 512,
+        "summarise_system_content": settings.SUMMARY_SYSTEM_CONTENT,
+        "summarise_user_content": settings.SUMMARY_USER_CONTENT,
+        "summarise_model": "model1",
+        "summarise_model_temperature": 0.6,
+        "summarise_max_tokens": 256,
+        "prediction_message": settings.PREDICTION_CONTENT,
+        "prediction_max_tokens": 128
+    }
+    return JsonResponse(chat_settings)
+
+
+@csrf_exempt
+def save_chat_settings(request):
+    '''save chat settings for the chatbot object
+    input: chatbot_obj
+    '''
+    chatbot_settings = json.loads(request.body.decode('utf-8'))
+    # chat_settings = ChatbotSettings(ner_llm_content=chatbot_settings[""], )
+    
+    return JsonResponse(chat_settings)
+
+
+@csrf_exempt
 def run_inference(request):
     '''run inference on the chatbot object
     input: chatbot_obj
@@ -763,6 +843,7 @@ def triage_phone(request):
 # #     {
 # #   "callerid": "system__caller_id",
 # #   "answer": "This parameter sends the LLM response to the URL.",
+
 # #   "chat_input": "This contains the user message when they speak.",
 # #   "session": "system__conversation_id",
 # #   "phone_number": "+1 234 567 8901"

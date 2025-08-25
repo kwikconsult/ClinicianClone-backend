@@ -50,3 +50,29 @@ class Chatbot(models.Model):
     recommendation = models.TextField(blank=True, null=True)
     def __unicode__(self):
         return self.session
+
+class ChatbotSettings(models.Model):
+    
+    ner_model_name = models.CharField(max_length=255,blank=True, null=True)
+    ner_model_context = models.TextField(blank=True, null=True)
+    ner_model_temperature = models.FloatField(blank=True, null=True)
+
+    follow_up_model_name = models.CharField(max_length=255, blank=True, null=True)
+    follow_up_model_context = models.CharField(max_length=255, blank=True, null=True)
+    follow_up_model_temperature = models.FloatField(blank=True, null=True)
+    follow_up_model_max_tokens = models.IntegerField(blank=True, null=True)
+    
+    summarise_model_name = models.CharField(max_length=255,blank=True, null=True)
+    summarise_model_system_context = models.TextField(blank=True, null=True)
+    summarise_model_user_context = models.TextField(blank=True, null=True)
+    summarise_model_temperature = models.FloatField(blank=True, null=True)
+    
+    prediction_model_name = models.CharField(max_length=255,blank=True, null=True)
+
+    prediction_model_context = models.CharField(max_length=255, blank=True, null=True)
+    prediction_model_max_tokens = models.IntegerField(blank=True, null=True)
+    prediction_model_temperature = models.FloatField(blank=True, null=True)
+    prediction_model_top_p = models.FloatField(blank=True, null=True)
+    
+    def __unicode__(self):
+        return self.session

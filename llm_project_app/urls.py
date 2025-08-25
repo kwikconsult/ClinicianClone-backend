@@ -25,4 +25,6 @@ urlpatterns = [
     path('api_django/get_chat_details/', views.get_chat_details, name='get_chat_details'),
     path('api_django/run_inference/', views.run_inference, name='run_inference'),
     path('api_django/delete_chat_history/', views.delete_chat_history, name='delete_chat_history'),
+    path('api_django/get_chat_settings/', views.get_chat_settings, name='get_chat_settings'),
+    path('api_django/save_chat_settings/', views.save_chat_settings, name='save_chat_settings'),
 ]
