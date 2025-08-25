@@ -206,6 +206,18 @@ def generate_with_groq(user_input, patient_data, latest_question):
         }
     }
 
+    # messages_for_NER = [
+    #     {
+    #         "role": "system",
+    #         "content": settings.SETTINGS_OBJ[""]
+    #     },
+    #     {
+    #         "role": "assistant",
+    #         "content": latest_question
+    #     },
+    #     {"role": "user", "content": user_input}
+    # ]
+
     messages_for_NER = [
         {
             "role": "system",

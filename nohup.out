@@ -7414,3 +7414,71 @@ Traceback (most recent call last):
     raise get_mysql_exception(
 django.db.utils.DataError: (1406, "1406 (22001): Data too long for column 'title' at row 1", '22001')
 [25/Aug/2025 15:45:49] "POST /api_django/triage/ HTTP/1.0" 200 5944
+
+title Here is a summary of the conversation in under 10 words as a title:
+
+**ER Discusses 84-year-old Female with Melena and Bleeding** 
+
+Here is a longer summary:
+ 
+The conversation is between an ER doctor and a consultant about an 84-year-old female patient presenting with melena. The ER doctor provides the patient's vital signs, lab results, and medical history. The consultant asks follow-up questions to clarify the patient's condition, including the presence of hematochezia or hematemesis, duration of symptoms, and medication use. The ER doctor responds with additional information, and the conversation continues.
+Performing system checks...
+
+System check identified no issues (0 silenced).
+August 25, 2025 - 16:19:21
+Django version 5.2.5, using settings 'llm_project_app.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CONTROL-C.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+[25/Aug/2025 17:07:12] "POST /api_django/triage/ HTTP/1.0" 200 3171
+[25/Aug/2025 18:12:31] "POST /api_django/get_chat_settings/ HTTP/1.0" 200 2772
+[25/Aug/2025 18:13:31] "POST /api_django/get_chat_settings/ HTTP/1.0" 200 2772
+[25/Aug/2025 18:15:11] "POST /api_django/get_chat_settings/ HTTP/1.0" 200 2772
+[25/Aug/2025 18:15:11] "POST /api_django/get_chat_settings/ HTTP/1.0" 200 2772
+[25/Aug/2025 18:16:23] "POST /api_django/get_chat_settings/ HTTP/1.0" 200 2772
+Performing system checks...
+
+System check identified no issues (0 silenced).
+August 25, 2025 - 16:25:26
+Django version 5.2.5, using settings 'llm_project_app.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CONTROL-C.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+Chatbot Object: {'first_question': True, 'session': '', 'user_id': '', 'title': 'Chat not yet finished', 'chat_input': 'dzdf', 'answer': '', 'recommendation': '', 'question_answer_list': [{'question': 'dzdf', 'answer': '...', 'questionTimestamp': '01:07 PM', 'answerTimestamp': '01:07 PM'}], 'patient_data_obj': {'age': '', 'sex': '', 'overview_list': [{'name': 'Hematochezia', 'value': 'NA', 'entity_found': False, 'outside_range': False}, {'name': 'Hematemesis', 'value': 'NA', 'entity_found': False, 'outside_range': False}, {'name': 'Melena', 'value': 'NA', 'entity_found': False, 'outside_range': False}, {'name': 'Syncope', 'value': 'NA', 'entity_found': False, 'outside_range': False}, {'name': 'Duration', 'value': 'NA', 'entity_found': False, 'outside_range': False}, {'name': 'Hx of GIB', 'value': 'Y/N', 'entity_found': False, 'outside_range': False}, {'name': 'Unstable CAD', 'value': 'Y/N', 'entity_found': False, 'outside_range': False}, {'name': 'COPD', 'value': 'Y/N', 'entity_found': False, 'outside_range': False}, {'name': 'CRF', 'value': 'Y/N', 'entity_found': False, 'outside_range': False}, {'name': 'Risk for stress ulcer', 'value': 'Y/N', 'entity_found': False, 'outside_range': False}, {'name': 'Cirrhosis', 'value': 'Y/N', 'entity_found': False, 'outside_range': False}, {'name': 'ASA/NSAID', 'value': 'Y/N', 'entity_found': False, 'outside_range': False}, {'name': 'PPI', 'value': 'Y/N', 'entity_found': False, 'outside_range': False}], 'exam_labs_list': [{'name': 'SBP', 'value': '0-200', 'entity_found': False, 'outside_range': False}, {'name': 'DBP', 'value': '0-200', 'entity_found': False, 'outside_range': False}, {'name': 'HR', 'value': '0-200', 'entity_found': False, 'outside_range': False}, {'name': 'Orthostasis', 'value': 'Y/N', 'entity_found': False, 'outside_range': False}, {'name': 'NG lavage', 'value': 'Data', 'entity_found': False, 'outside_range': False}, {'name': 'Rectal', 'value': 'Data', 'entity_found': False, 'outside_range': False}, {'name': 'HCT', 'value': '0-50', 'entity_found': False, 'outside_range': False}, {'name': 'HCT Drop', 'value': '0-50', 'entity_found': False, 'outside_range': False}, {'name': 'PLT', 'value': '0-500', 'entity_found': False, 'outside_range': False}, {'name': 'CR', 'value': '0-10', 'entity_found': False, 'outside_range': False}, {'name': 'BUN', 'value': '0-200', 'entity_found': False, 'outside_range': False}, {'name': 'INR', 'value': '0-10', 'entity_found': False, 'outside_range': False}], 'treatment_recommendations_list': [{'name': 'Source', 'value': 'Upper/Mid/Lower', 'entity_found': False, 'outside_range': False}, {'name': 'Resuscitation', 'value': 'Y/N', 'entity_found': False, 'outside_range': False}, {'name': 'Emergent Endoscopy', 'value': 'Y/N', 'entity_found': False, 'outside_range': False}, {'name': 'ICU', 'value': 'Y/N', 'entity_found': False, 'outside_range': False}]}, 'chain_of_thought': 'Init chain'}
+Generated follow-up question:           It seems like there's been a misunderstanding. Let's start fresh. To assess the patient's condition, I need some information. What are the patient's vital signs, including blood pressure, heart rate, and any signs of orthostasis?
+Traceback (most recent call last):
+  File "/mnt/projects/ClinicianClone-backend/manage.py", line 22, in <module>
+    main()
+  File "/mnt/projects/ClinicianClone-backend/manage.py", line 18, in main
+    execute_from_command_line(sys.argv)
+  File "/mnt/software/envs/py312/lib/python3.12/site-packages/django/core/management/__init__.py", line 442, in execute_from_command_line
+    utility.execute()
+  File "/mnt/software/envs/py312/lib/python3.12/site-packages/django/core/management/__init__.py", line 382, in execute
+    settings.INSTALLED_APPS
+  File "/mnt/software/envs/py312/lib/python3.12/site-packages/django/conf/__init__.py", line 81, in __getattr__
+    self._setup(name)
+  File "/mnt/software/envs/py312/lib/python3.12/site-packages/django/conf/__init__.py", line 68, in _setup
+    self._wrapped = Settings(settings_module)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/software/envs/py312/lib/python3.12/site-packages/django/conf/__init__.py", line 166, in __init__
+    mod = importlib.import_module(self.SETTINGS_MODULE)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/software/envs/py312/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+  File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/mnt/projects/ClinicianClone-backend/llm_project_app/settings.py", line 29
+    "ner_model_context":"You are discussing a patient with a physician in a natural conversational style. Summarize the data when asked. Extract medical terms and corresponding values mentioned by the user. Return JSON matching the schema. For each entity, return an object with 'name', 'value' (boolean string), and 'entity_found' (boolean).         Example: 'entities': [[{'name': 'Hematochezia', 'value': 'true', 'entity_found': true}, ...]. Extract the entities only mentioned in the user input. If an entity is not mentioned, don't include it in the response.
+                        ^
+SyntaxError: unterminated string literal (detected at line 29)
