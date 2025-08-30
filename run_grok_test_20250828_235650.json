@@ -1,0 +1,257 @@
+{
+  "test_timestamp": "2025-08-28T23:56:34.746673",
+  "settings": {
+    "ner_model_name": "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "ner_model_context": "You are discussing a patient with a physician in a natural conversational style. Summarize the data when asked.Extract medical terms and corresponding values mentioned by the user. Return JSON matching the schema. For each entity, return an object with 'name', 'value' (boolean string), and 'entity_found' (boolean).Example: 'entities': [[{'name': 'Hematochezia', 'value': 'true', 'entity_found': true}, ...]Extract the entities only mentioned in the user input. If an entity is not mentioned, don't include it in the response.Give the response if it is yes then it have to be Yes and if it is no, then No.Pass the entities as a standardized format. Example: International Normalized Ratio (INR) should be passed as INR, not International Normalized Ratio.Age, Sex, Hematochezia,Hematemesis,Melena,Duration,Syncope,Hx of GIB,Unstable CAD,COPD,CRF,Risk for stress ulcer, Cirrhosis,ASA/NSAID,PPI, SBP,DBP,HR,Orthostasis,NG lavage,Rectal,HCT,HCT Drop,PLT,CR,BUN,INRHematochezia and Hemetesis have three values - 'none','small','copious', Melena have three values - 'Brown', 'Dark', 'Pitch black'for other entities, if it is yes then it have to be Yes and if it is no, then No. ",
+    "ner_model_temperature": 0,
+    "follow_up_model_name": "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "follow_up_model_context": "Collect data about variables: Missing Data. Keep questions short and terse, Be as natural as possible and direct questions and DO NOT ask about Source, Resuscitation, Emergent Endoscopy or ICU. Combine multiple missing entities into one question. Example: 'What is their blood work?",
+    "follow_up_model_temperature": 0.3,
+    "follow_up_model_max_tokens": 64,
+    "summarise_model_name": "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "summarise_model_system_context": "You are a medical assistant and you have given task to convert the JSON file into text. Only as example output no extra words",
+    "summarise_model_user_context": "",
+    "summarise_model_temperature": 0,
+    "prediction_model_name": "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "prediction_model_context": "You have to triage the source, resuscitation, if urgent endoscopy required, if ICU is needed or Monitor or Regular room. you have to give the response in short form: Source:'',Resuscitation:'',Emergent Endoscopy:'',  if ICU is required:''. Also provide the chain_of_thought behind why do you think the bleeding is from particular sourse, why do you think emergent endoscopy is required/not required, why do you think reusitation is required/not required, why do you think ICU admission is required/not_required. under 'chain_of_thought'. This is the information given by the patient:",
+    "prediction_model_max_tokens": 1024,
+    "prediction_model_temperature": 0.7,
+    "prediction_model_top_p": 0.9,
+    "treatment_recommendation_model_name": "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "treatment_recommendation_model_context": "You are a medical assistant. Extract ONLY the following treatment-related parameters EXPLICITLY MENTIONED in the clinical discussion: Source (Allowed values: 'Upper','Mid','Lower'), Resuscitation (Y/N), Emergent Endoscopy (Y/N), ICU (Y/N). Return JSON with 'treatment_recommendations_list' containing these 4 parameters in EXACT order. also for the 'chain_of_thought' return the string of explanation given by the LLM, direct Chain of thought on getting those results, don't repeat the terms. For each: 'name' , 'value' (extracted value (Should be exactly as Allowed Values) OR ''), 'entity_found' (true ONLY if explicitly mentioned), 'outside_range' (true ONLY if value invalid). if it is ICU then pass value as Y or for everything else it should be N. Explain your reasoning process in detail and return the thought process in the JSON as 'chain_of_thought'.",
+    "treatment_recommendation_model_temperature": 0,
+    "treatment_recommendation_model_response_format": {
+      "type": "json_object",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "treatment_recommendations_list": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "entity_found": {
+                  "type": "boolean"
+                },
+                "outside_range": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "name",
+                "value",
+                "entity_found",
+                "outside_range"
+              ]
+            }
+          },
+          "chain_of_thought": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "treatment_recommendations_list",
+          "chain_of_thought"
+        ]
+      }
+    }
+  },
+  "conversation_flow": [
+    {
+      "timestamp": "2025-08-28T23:56:35.776246",
+      "stage": "ner_followup",
+      "user_input": "I've got an 80-year-old male here, Mr. Peterson. He's been having melena for about two days, and his wife says he had a syncopal episode at home this morning. He's been on a high dose of ASA for some unstable CAD, and he also takes a PPI, but he's not very compliant",
+      "assistant_response": "Let's get some more information. Does he have a history of gastrointestinal bleeding, and what's his vital sign status - can you tell me his blood pressure, heart rate, and if he's showing any signs of orthostasis? Also, has he vomited blood or had any hematochezia? What's his current blood work, including",
+      "parameters": {
+        "ner_model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "ner_temperature": 0,
+        "follow_up_model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "follow_up_temperature": 0.3,
+        "follow_up_max_tokens": 64,
+        "missing_entities": [
+          "Hematochezia",
+          "Hematemesis",
+          "Hx of GIB",
+          "COPD",
+          "CRF",
+          "Risk for stress ulcer",
+          "Cirrhosis",
+          "SBP",
+          "DBP",
+          "HR",
+          "Orthostasis",
+          "NG lavage",
+          "Rectal",
+          "HCT",
+          "HCT Drop",
+          "PLT",
+          "CR",
+          "BUN",
+          "INR"
+        ]
+      }
+    },
+    {
+      "timestamp": "2025-08-28T23:56:37.018549",
+      "stage": "ner_followup",
+      "user_input": "He was pretty hypotensive when he came in. His SBP was 85, DBP 50, and HR 125. We've got two large-bore IVs in and he's responding to fluids. His most recent vitals are 105/65, HR 105, but he's orthostatic",
+      "assistant_response": "What are his lab results, specifically his HCT, PLT, BUN, INR, and CR levels? Is there any evidence of hematochezia, hematemesis, or a history of gastrointestinal bleeding? Has he undergone an NG lavage or rectal exam? Does he have a history of COPD, CRF",
+      "parameters": {
+        "ner_model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "ner_temperature": 0,
+        "follow_up_model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "follow_up_temperature": 0.3,
+        "follow_up_max_tokens": 64,
+        "missing_entities": [
+          "Hematochezia",
+          "Hematemesis",
+          "Hx of GIB",
+          "COPD",
+          "CRF",
+          "Risk for stress ulcer",
+          "Cirrhosis",
+          "NG lavage",
+          "Rectal",
+          "HCT",
+          "HCT Drop",
+          "PLT",
+          "CR",
+          "BUN",
+          "INR"
+        ]
+      }
+    },
+    {
+      "timestamp": "2025-08-28T23:56:37.806673",
+      "stage": "ner_followup",
+      "user_input": "The lavage was clear, but the rectal exam was guaiac positive with melenic stool, so the bleed is definitely there, just not active enough to be showing up in the stomach",
+      "assistant_response": "What is the patient's lab work, specifically their HCT, platelet count, creatinine, BUN, and INR? And do they have a history of gastrointestinal bleeding, cirrhosis, or COPD, and are they at risk for stress ulcer?",
+      "parameters": {
+        "ner_model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "ner_temperature": 0,
+        "follow_up_model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "follow_up_temperature": 0.3,
+        "follow_up_max_tokens": 64,
+        "missing_entities": [
+          "Hematochezia",
+          "Hematemesis",
+          "Hx of GIB",
+          "COPD",
+          "CRF",
+          "Risk for stress ulcer",
+          "Cirrhosis",
+          "HCT",
+          "HCT Drop",
+          "PLT",
+          "CR",
+          "BUN",
+          "INR"
+        ]
+      }
+    },
+    {
+      "timestamp": "2025-08-28T23:56:38.651993",
+      "stage": "ner_followup",
+      "user_input": "His initial Hct was 28, but it's dropped to 22 since we started resuscitation. Plt is 140, Cr is 1.8, and BUN is 45. His INR is also high at 1.9",
+      "assistant_response": "Does he have a history of gastrointestinal bleeding, and is he at risk for stress ulcer due to any underlying conditions such as cirrhosis or COPD, and has he presented with hematemesis or hematochezia?",
+      "parameters": {
+        "ner_model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "ner_temperature": 0,
+        "follow_up_model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "follow_up_temperature": 0.3,
+        "follow_up_max_tokens": 64,
+        "missing_entities": [
+          "Hematochezia",
+          "Hematemesis",
+          "Hx of GIB",
+          "COPD",
+          "CRF",
+          "Risk for stress ulcer",
+          "Cirrhosis"
+        ]
+      }
+    },
+    {
+      "timestamp": "2025-08-28T23:56:39.367129",
+      "stage": "ner_followup",
+      "user_input": "He does present with copious blood stool, also hematemesis and has a history of GI Bleed",
+      "assistant_response": "Does he have a history of COPD, CRF, or liver disease like Cirrhosis, and is there a concern for stress ulcer?",
+      "parameters": {
+        "ner_model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "ner_temperature": 0,
+        "follow_up_model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "follow_up_temperature": 0.3,
+        "follow_up_max_tokens": 64,
+        "missing_entities": [
+          "COPD",
+          "CRF",
+          "Risk for stress ulcer",
+          "Cirrhosis"
+        ]
+      }
+    },
+    {
+      "timestamp": "2025-08-28T23:56:40.624473",
+      "stage": "ner_followup",
+      "user_input": "He does present with CRF, COPD, cirrhosis and there is risk for stress ulcer",
+      "assistant_response": "What is his current hemoglobin level and platelet count, and are there any recent lab results for liver function tests?",
+      "parameters": {
+        "ner_model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "ner_temperature": 0,
+        "follow_up_model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "follow_up_temperature": 0.3,
+        "follow_up_max_tokens": 64,
+        "missing_entities": []
+      }
+    },
+    {
+      "timestamp": "2025-08-28T23:56:41.144769",
+      "stage": "summary",
+      "user_input": "Generate summary from patient data",
+      "assistant_response": "Age: 80\nSex: Male\nHematochezia: copious\nHematemesis: true\nMelena: Dark\nDuration: 2 days\nSyncope: Yes\nHx of GIB: Yes\nUnstable CAD: Yes\nCOPD: Yes\nCRF: Yes\nRisk for stress ulcer: Yes\nCirrhosis: Yes\nASA/NSAID: Yes\nPPI: Yes\nSBP: 105 (90-140)\nDBP: 65 (60-90)\nHR: 105 (60-100) outside range\nOrthostasis: Yes\nNG lavage: clear\nRectal: guaiac positive\nHCT: 22 (36-48) outside range\nHCT Drop: Yes\nPLT: 140 (150-450) outside range\nCR: 1.8 (0.6-1.2) outside range\nBUN: 45 (7-20) outside range\nINR: 1.9 (0.8-1.2) outside range",
+      "parameters": {
+        "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "temperature": 0,
+        "executed_time": "0.520 seconds"
+      }
+    },
+    {
+      "timestamp": "2025-08-28T23:56:49.914073",
+      "stage": "inference_api",
+      "user_input": "External API call",
+      "assistant_response": "{\"texts\":[\"\\nLactate: 3.2 (0.5-1.6) outside range\\n\\n**Response:**\\n\\n- Source: Upper GI\\n- Resuscitation: Yes\\n- Emergent Endoscopy: Yes\\n- ICU: Yes\\n\\n**Chain_of_thought:**\\n\\n- **Source:** The patient has hematemesis and melena, which are classic signs of upper GI bleeding. The copious hematochezia could be due to a brisk upper GI bleed or a lower GI bleed, but the presence of hematemesis makes upper GI bleeding more likely. The patient's history of cirrhosis, ASA/NSAID use, and risk for stress ulcer further supports an upper GI source. The NG lavage being clear does not rule out upper GI bleeding, especially if the bleed is intermittent or has slowed.\\n- **Resuscitation:** The patient has signs of hemodynamic instability, including syncope, orthostasis, and a heart rate of 105. The patient's HCT is 22, indicating significant blood loss. The BUN is elevated, which can occur with upper GI bleeding due to protein loss and dehydration. The lactate is also elevated, indicating potential tissue hypoxia. Therefore, resuscitation with fluids and blood products is required.\\n- **Emergent Endoscopy:** Given the patient's hemodynamic instability, significant blood loss, and risk factors for upper GI bleeding, emergent endoscopy is indicated to identify and treat the source of bleeding.\\n- **ICU:** The patient's unstable CAD, COPD, CRF, and elevated lactate indicate a high risk for complications. The patient's hemodynamic instability and significant blood loss also require close monitoring and potential intervention, which can be best provided in an ICU setting.\"]}\n",
+      "parameters": {
+        "api_endpoint": "https://clinicianclone.com/infer_test/",
+        "max_tokens": 1024,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "executed_time": "8.769 seconds"
+      }
+    },
+    {
+      "timestamp": "2025-08-28T23:56:50.497511",
+      "stage": "treatment_extraction",
+      "user_input": "Extract treatment from API response",
+      "assistant_response": "{\n  \"treatment_recommendations_list\": [\n    {\n      \"name\": \"Source\",\n      \"value\": \"Upper\",\n      \"entity_found\": true,\n      \"outside_range\": false\n    },\n    {\n      \"name\": \"Resuscitation\",\n      \"value\": \"Y\",\n      \"entity_found\": true,\n      \"outside_range\": false\n    },\n    {\n      \"name\": \"Emergent Endoscopy\",\n      \"value\": \"Y\",\n      \"entity_found\": true,\n      \"outside_range\": false\n    },\n    {\n      \"name\": \"ICU\",\n      \"value\": \"Y\",\n      \"entity_found\": true,\n      \"outside_range\": false\n    }\n  ],\n  \"chain_of_thought\": \"The patient's symptoms and lab results indicate upper GI bleeding, necessitating resuscitation and emergent endoscopy. The presence of hemodynamic instability, significant blood loss, and comorbidities like CAD, COPD, and CRF, along with elevated lactate, justify ICU admission. The thought process involves analyzing the patient's clinical presentation, lab values, and risk factors to determine the appropriate treatment parameters.\"\n}",
+      "parameters": {
+        "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "temperature": 0,
+        "executed_time": "0.583 seconds"
+      }
+    }
+  ],
+  "execution_times": {
+    "ner_followup": "1.257 seconds",
+    "summary_generation": "0.520 seconds",
+    "prediction_generation": "8.769 seconds",
+    "treatment_extraction": "0.583 seconds",
+    "recommendation_generation": "0.000 seconds",
+    "total_execution": "15.751 seconds"
+  }
+}

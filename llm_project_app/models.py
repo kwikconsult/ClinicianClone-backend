@@ -56,23 +56,43 @@ class ChatbotSettings(models.Model):
     ner_model_name = models.CharField(max_length=255,blank=True, null=True)
     ner_model_context = models.TextField(blank=True, null=True)
     ner_model_temperature = models.FloatField(blank=True, null=True)
+    ner_model_max_tokens = models.IntegerField(blank=True, null=True)
+    ner_model_top_p = models.IntegerField(blank=True, null=True)
+    ner_model_json_response = models.BooleanField(blank=True, null=True)
+    ner_model_response_format = models.TextField(blank=True, null=True)
 
     follow_up_model_name = models.CharField(max_length=255, blank=True, null=True)
     follow_up_model_context = models.CharField(max_length=255, blank=True, null=True)
     follow_up_model_temperature = models.FloatField(blank=True, null=True)
     follow_up_model_max_tokens = models.IntegerField(blank=True, null=True)
+    follow_up_model_top_p = models.IntegerField(blank=True, null=True)
+    follow_up_model_json_response = models.BooleanField(blank=True, null=True)
+    follow_up_model_response_format = models.TextField(blank=True, null=True)
     
     summarise_model_name = models.CharField(max_length=255,blank=True, null=True)
     summarise_model_system_context = models.TextField(blank=True, null=True)
     summarise_model_user_context = models.TextField(blank=True, null=True)
     summarise_model_temperature = models.FloatField(blank=True, null=True)
+    summarise_model_max_tokens = models.IntegerField(blank=True, null=True)
+    summarise_model_top_p = models.IntegerField(blank=True, null=True)
+    summarise_model_json_response = models.BooleanField(blank=True, null=True)
+    summarise_model_response_format = models.TextField(blank=True, null=True)
     
     prediction_model_name = models.CharField(max_length=255,blank=True, null=True)
-
     prediction_model_context = models.CharField(max_length=255, blank=True, null=True)
-    prediction_model_max_tokens = models.IntegerField(blank=True, null=True)
     prediction_model_temperature = models.FloatField(blank=True, null=True)
+    prediction_model_max_tokens = models.IntegerField(blank=True, null=True)
     prediction_model_top_p = models.FloatField(blank=True, null=True)
+    prediction_model_json_response = models.BooleanField(blank=True, null=True)
+    prediction_model_response_format = models.TextField(blank=True, null=True)
+
+    treatment_recommendation_model_name = models.CharField(max_length=255, blank=True, null=True)
+    treatment_recommendation_model_context = models.TextField(blank=True, null=True)
+    treatment_recommendation_model_temperature = models.FloatField(blank=True, null=True)
+    treatment_max_tokens = models.IntegerField(blank=True, null=True)
+    treatment_model_top_p = models.FloatField(blank=True, null=True)
+    treatment_recommendation_model_json_response = models.BooleanField(blank=True, null=True)
+    treatment_recommendation_model_response_format = models.TextField(blank=True, null=True)
     
     def __unicode__(self):
         return self.session
