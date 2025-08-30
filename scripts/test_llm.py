@@ -32,8 +32,7 @@ django.setup()
 from django.conf import settings
 
 # If django import fails
-GROQ_API_KEY = os.getenv('GROQ_API_KEY', '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')
-
+GROQ_API_KEY = settings.GROQ_API_KEY
 # user_params = [Age, Sex, Hematochezia,Hematemesis,Melena,Duration,Syncope,Hx of GIB,Unstable CAD,COPD,CRF,Risk for stress ulcer]
 
 # str_params = (", ").join(user_params)
